@@ -40,9 +40,9 @@ module.exports = {
 
       // Кидаем .env на сервер
       'pre-deploy-local': [
-        `scp ./frontend/.env ${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_PATH}/frontend/.env`
+        `scp ./frontend/.env ${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_PATH}/frontend/.env`,
         `scp ./backend/.env ${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_PATH}/backend/.env`
-      ],
+      ].join(' && '),
 
       // Готовим всё уже на сервере
       'pre-deploy': [
