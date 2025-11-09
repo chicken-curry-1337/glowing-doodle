@@ -30,7 +30,7 @@ module.exports = {
       path: DEPLOY_PATH,
 
       // Кидаем .env на сервер
-      'pre-deploy': `scp ./.env ${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_PATH}/backend/.env`,
+      'pre-deploy-local': `scp ./.env ${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_PATH}/backend/.env`,
 
       // Готовим всё уже на сервере
       'post-deploy': [
