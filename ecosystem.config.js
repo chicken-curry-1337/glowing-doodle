@@ -1,69 +1,53 @@
 const path = require('path');
 require('dotenv').config();
 
-const {
-  DEPLOY_USER,
-  DEPLOY_HOST,
-  DEPLOY_PATH,
-  DEPLOY_REF = 'origin/master',
-} = process.env;
-
-const NVM_NODE = '~/.nvm/versions/node/v22.21.1/bin';
-const NVM_PATH = `${NVM_NODE}:$PATH`;
-
 module.exports = {
   apps: [
     {
       name: 'mesto-backend',
-      cwd: path.join(__dirname, 'backend'),
+      cwd: `${__dirname}/backend`,
       script: 'npm',
-      args: 'run start',           // старт из package.json backend
-      env: {
-        NODE_ENV: 'production',
-        PATH: NVM_PATH,            // чтобы pm2-демон видел правильный node/npm
-      },
+      args: 'run start',
+      env: { NODE_ENV: 'production' }
     },
+    // build фронта не нужно держать в PM2-процессе — он статичен
+    // лучше собирать в post-deploy и раздавать nginx-ом
   ],
 
   deploy: {
     production: {
-      user: DEPLOY_USER,
-      host: DEPLOY_HOST,
+      user: process.env.DEPLOY_USER,
+      host: process.env.DEPLOY_HOST,
       repo: 'https://github.com/chicken-curry-1337/glowing-doodle',
-      ref: DEPLOY_REF,
-      path: DEPLOY_PATH,
+      ref: process.env.DEPLOY_REF || 'origin/master',
+      path: process.env.DEPLOY_PATH,
 
-      // создадим shared папки
-      'post-setup': [
-        `mkdir -p ${DEPLOY_PATH}/shared/backend ${DEPLOY_PATH}/shared/frontend`
-      ].join(' && '),
+      'post-setup': 'mkdir -p $DEPLOY_PATH/shared/backend $DEPLOY_PATH/shared/frontend',
 
-      // копируем .env локально → в shared на сервере
+      // копируем env-ки в shared
       'pre-deploy-local': [
-        `scp ./backend/.env  ${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_PATH}/shared/backend/.env`,
-        `scp ./frontend/.env ${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_PATH}/shared/frontend/.env`
+        'scp ./backend/.env $DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/shared/backend/.env',
+        'scp ./frontend/.env $DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/shared/frontend/.env'
       ].join(' && '),
 
-      // на сервере: линкуем .env, ставим зависимости, билдим, рестартим бэкенд
+      // раскатываем, линкуем env, ставим зависимости, билдим фронт, рестартим бэк
       'post-deploy': [
-        // линки env
-        `ln -sf ${DEPLOY_PATH}/shared/backend/.env  ${DEPLOY_PATH}/current/backend/.env`,
-        `ln -sf ${DEPLOY_PATH}/shared/frontend/.env ${DEPLOY_PATH}/current/frontend/.env`,
+        'ln -sf $DEPLOY_PATH/shared/backend/.env  $DEPLOY_PATH/current/backend/.env',
+        'ln -sf $DEPLOY_PATH/shared/frontend/.env $DEPLOY_PATH/current/frontend/.env',
 
-        // установить корневые тулзы, если нужны (опционально)
-        `cd ${DEPLOY_PATH}/current && export PATH=${NVM_PATH} && npm ci || true`,
+        // корень (на случай корневых скриптов)
+        'cd $DEPLOY_PATH/current && source ~/.nvm/nvm.sh && nvm use v22.21.1 && npm ci || npm i',
 
-        // backend: deps + build
-        `cd ${DEPLOY_PATH}/current/backend && export PATH=${NVM_PATH} && npm ci`,
-        `cd ${DEPLOY_PATH}/current/backend && export PATH=${NVM_PATH} && npm run build || true`,
+        // backend deps
+        'cd $DEPLOY_PATH/current/backend && source ~/.nvm/nvm.sh && nvm use v22.21.1 && npm ci || npm i',
 
-        // frontend: deps + build (одноразово)
-        `cd ${DEPLOY_PATH}/current/frontend && export PATH=${NVM_PATH} && npm ci`,
-        `cd ${DEPLOY_PATH}/current/frontend && export PATH=${NVM_PATH} && npm run build`,
+        // frontend build (он не в PM2!)
+        'cd $DEPLOY_PATH/current/frontend && source ~/.nvm/nvm.sh && nvm use v22.21.1 && npm ci || npm i && npm run build',
 
-        // рестартим только бэкенд
-        `cd ${DEPLOY_PATH}/current && pm2 startOrRestart ecosystem.config.js --only mesto-backend --env production`,
-      ].join(' && '),
-    },
-  },
+        // перезапуск только бэкенда, из правильного ecosystem-а
+        'cd $DEPLOY_PATH/current && pm2 delete mesto-backend || true',
+        'cd $DEPLOY_PATH/current && pm2 startOrRestart ecosystem.config.js --only mesto-backend --env production'
+      ].join(' && ')
+    }
+  }
 };
