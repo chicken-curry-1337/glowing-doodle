@@ -50,6 +50,7 @@ module.exports = {
       'post-deploy': [
         `ln -sf ${DEPLOY_PATH}/shared/backend/.env ${DEPLOY_PATH}/current/backend/.env`,
         `ln -sf ${DEPLOY_PATH}/shared/frontend/.env ${DEPLOY_PATH}/current/frontend/.env`,
+        `cd ${DEPLOY_PATH}/current && source ~/.nvm/nvm.sh && nvm use v22.21.1 && npm i`,
         `cd ${DEPLOY_PATH}/current/backend && source ~/.nvm/nvm.sh && nvm use v22.21.1 && npm i`,
         `cd ${DEPLOY_PATH}/current/frontend && source ~/.nvm/nvm.sh && nvm use v22.21.1 && npm i`,
         `pm2 startOrRestart ${DEPLOY_PATH}/current/ecosystem.config.js --only mesto-backend --env production`
