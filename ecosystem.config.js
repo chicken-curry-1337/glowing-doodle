@@ -22,31 +22,31 @@ module.exports = {
   ],
 
   deploy: {
-    production: {
-      user: DEPLOY_USER,
-      host: DEPLOY_HOST,
-      ref: DEPLOY_REF,
-      repo: 'https://github.com/chicken-curry-1337/glowing-doodle.git',
-      path: DEPLOY_PATH,
+  production: {
+    user: DEPLOY_USER,
+    host: DEPLOY_HOST,
+    // ВАЖНО — теперь без repo:
+    repo: 'https://github.com/chicken-curry-1337/glowing-doodle',
+    // И без ref:
+    ref: DEPLOY_REF,
 
-      // как в статье — кидаем .env перед деплоем
-      'pre-deploy-local': `scp ./backend/.env ${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_PATH}`,
+    // Ничего не создаём, мы уже знаем путь:
+    path: DEPLOY_PATH,
 
-      // на сервере:
-      'post-deploy': [
-        // установить зависимости бэка
-        'cd backend && npm ci',
+    // Кидаем .env на сервер (ты уже видел что это работает)
+    'pre-deploy': `scp ./backend/.env ${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_PATH}/backend/.env`,
 
-        // установить зависимости фронта + билд
-        'cd ../frontend && npm ci && npm run build',
+    // Готовим всё уже на сервере
+    'post-deploy': [
+      // backend зависимостИ
+      `cd ${DEPLOY_PATH}/backend && npm ci`,
 
-        // и тупо переложить билд туда, где его раздает nginx
-        'rm -rf /home/fin/glowing-doodle/frontend/build',
-        'cp -R ./build /home/fin/glowing-doodle/frontend/build',
+      // frontend билд
+      `cd ${DEPLOY_PATH}/frontend && npm ci && npm run build`,
 
-        // перезапуск бэка
-        'pm2 restart ecosystem.config.js --only glowing-backend --env production'
-      ].join(' && '),
-    },
+      // перезапуск бэка
+      `pm2 restart ecosystem.config.js --only glowing-backend --env production`
+    ].join(' && '),
   },
+},
 };
