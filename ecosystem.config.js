@@ -50,11 +50,8 @@ module.exports = {
         `cd ${DEPLOY_PATH}/frontend && npm ci`,
         // backend зависимостИ
         `cd ${DEPLOY_PATH}/backend && npm ci`,
-
-        // перезапуск бэка
-        `pm2 restart ecosystem.config.js --only glowing-backend --env production`
       ].join(' && '),
-      'pre-deploy': `pm2 restart ecosystem.config.js --only mesto-backend --env production`,
+      'post-deploy': `pm2 restart ecosystem.config.js --only mesto-backend --env production`,
     },
 },
 };
