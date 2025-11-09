@@ -139,7 +139,7 @@ class Api {
   }
   }
   // Замените на адрес вашего бэкенда
-  const api = new Api(process.env.API_URL);
+  const api = new Api("http://api.chicken-curry.nomorepartiessbs.ru/");
   
   export default api;
   
