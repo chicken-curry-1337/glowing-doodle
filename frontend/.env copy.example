@@ -1,7 +1,0 @@
-# SSH/деплой
-DEPLOY_USER=
-DEPLOY_HOST=
-DEPLOY_PATH=
-DEPLOY_REF=
-
-API_URL=http://localhost:3000
