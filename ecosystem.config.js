@@ -1,4 +1,4 @@
-// ecosystem.config.js
+const path = require('path');
 require('dotenv').config();
 
 const {
@@ -15,7 +15,7 @@ module.exports = {
   apps: [
     {
       name: 'mesto-backend',
-      cwd: './backend',
+      cwd: path.join(__dirname, 'backend'),
       script: 'npm',
       args: 'run start',           // старт из package.json backend
       env: {
@@ -62,7 +62,7 @@ module.exports = {
         `cd ${DEPLOY_PATH}/current/frontend && export PATH=${NVM_PATH} && npm run build`,
 
         // рестартим только бэкенд
-        `export PATH=${NVM_PATH} && pm2 startOrRestart ${DEPLOY_PATH}/current/ecosystem.config.js --only mesto-backend --env production`,
+        `cd ${DEPLOY_PATH}/current && pm2 startOrRestart ecosystem.config.js --only mesto-backend --env production`,
       ].join(' && '),
     },
   },
