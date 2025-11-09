@@ -38,20 +38,21 @@ module.exports = {
       ref: DEPLOY_REF,
       path: DEPLOY_PATH,
 
-      // Кидаем .env на сервер
+      'post-setup': `mkdir -p ${DEPLOY_PATH}/shared/backend ${DEPLOY_PATH}/shared/frontend`,
+
+      // 2) локально копируем .env В SHARED
       'pre-deploy-local': [
-        `scp ./frontend/.env ${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_PATH}/frontend/.env`,
-        `scp ./backend/.env ${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_PATH}/backend/.env`
+        `scp ./backend/.env ${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_PATH}/shared/backend/.env`,
+        `scp ./frontend/.env ${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_PATH}/shared/frontend/.env`
       ].join(' && '),
 
-      // Готовим всё уже на сервере
-      'pre-deploy': [
-        // frontend зависимости
-        `cd ${DEPLOY_PATH}/frontend && npm ci`,
-        // backend зависимостИ
-        `cd ${DEPLOY_PATH}/backend && npm ci`,
+      // 3) ставим зависимости, линкуем .env, рестартим
+      'post-deploy': [
+        `ln -sf ${DEPLOY_PATH}/shared/backend/.env ${DEPLOY_PATH}/current/backend/.env`,
+        `ln -sf ${DEPLOY_PATH}/shared/frontend/.env ${DEPLOY_PATH}/current/frontend/.env`,
+        `cd ${DEPLOY_PATH}/current/backend && npm ci`,
+        `pm2 startOrRestart ${DEPLOY_PATH}/current/ecosystem.config.js --only mesto-backend --env production`
       ].join(' && '),
-      'post-deploy': `pm2 restart ecosystem.config.js --only mesto-backend --env production`,
     },
 },
 };
