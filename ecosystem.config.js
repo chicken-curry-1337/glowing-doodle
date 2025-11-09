@@ -8,17 +8,14 @@ const {
   DEPLOY_REF = 'origin/master',
 } = process.env;
 
-const HOME = '/home/fin';
-const NVM_BIN = `${HOME}/.nvm/versions/node/v22.21.1/bin`; // абсолютный путь
-
 module.exports = {
   apps: [
     {
       name: 'mesto-backend',
       cwd: path.join(__dirname, 'backend'),
-      script: `${NVM_BIN}/npm`,   // запускаем npm по абсолютному пути
+      script: 'npm',
       args: 'run start',
-      env: { NODE_ENV: 'production' }, // НЕ трогаем PATH вообще
+      env: { NODE_ENV: 'production' },
     },
   ],
 
@@ -43,15 +40,15 @@ module.exports = {
         `ln -sf ${DEPLOY_PATH}/shared/frontend/.env ${DEPLOY_PATH}/current/frontend/.env`,
 
         // backend deps (+опц. build)
-        `cd ${DEPLOY_PATH}/current/backend && ${NVM_BIN}/npm ci`,
-        `cd ${DEPLOY_PATH}/current/backend && ${NVM_BIN}/npm run build || true`,
+        `cd ${DEPLOY_PATH}/current/backend && npm ci`,
+        `cd ${DEPLOY_PATH}/current/backend && npm run build || true`,
 
         // frontend deps + build (если нужно)
-        `cd ${DEPLOY_PATH}/current/frontend && ${NVM_BIN}/npm ci`,
-        `cd ${DEPLOY_PATH}/current/frontend && ${NVM_BIN}/npm run build`,
+        `cd ${DEPLOY_PATH}/current/frontend && npm ci`,
+        `cd ${DEPLOY_PATH}/current/frontend && npm run build`,
 
         // рестарт только бэка (pm2 тоже по абсолютному пути)
-        `${NVM_BIN}/pm2 startOrRestart ${DEPLOY_PATH}/current/ecosystem.config.js --only mesto-backend --env production`
+        `pm2 startOrRestart ${DEPLOY_PATH}/current/ecosystem.config.js --only mesto-backend --env production`
       ].join(' && '),
     },
   },
