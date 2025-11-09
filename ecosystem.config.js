@@ -1,15 +1,10 @@
 const path = require('path');
 require('dotenv').config();
 
-const {
-  DEPLOY_USER,
-  DEPLOY_HOST,
-  DEPLOY_PATH,
-  DEPLOY_REF = 'origin/master',
-} = process.env;
+const { DEPLOY_USER, DEPLOY_HOST, DEPLOY_PATH, DEPLOY_REF = 'origin/master' } = process.env;
 
-// Хелпер: включаем nvm и выбираем нужный Node
-const NVM_INIT = 'export NVM_DIR=\"$HOME/.nvm\"; . \"$NVM_DIR/nvm.sh\"; nvm use 22';
+// одна строка, которую будем префиксить ко всем командам:
+const NVM = 'export NVM_DIR="$HOME/.nvm"; . "$NVM_DIR/nvm.sh"; nvm use 22';
 
 module.exports = {
   apps: [
@@ -30,26 +25,27 @@ module.exports = {
       ref: DEPLOY_REF,
       path: DEPLOY_PATH,
 
-      'post-setup': `mkdir -p ${DEPLOY_PATH}/shared/backend ${DEPLOY_PATH}/shared/frontend && bash -lc '${NVM_INIT}; npm i -g pm2'`,
+      'post-setup': `mkdir -p ${DEPLOY_PATH}/shared/backend ${DEPLOY_PATH}/shared/frontend`,
 
       'pre-deploy-local': [
         `scp ./backend/.env  ${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_PATH}/shared/backend/.env`,
-        `scp ./frontend/.env ${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_PATH}/shared/frontend/.env`
+        `scp ./frontend/.env ${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_PATH}/shared/frontend/.env`,
       ].join(' && '),
 
       'post-deploy': [
-        // линк .env
+        // подрубаем nvm один раз и дальше живём
+        `${NVM}`,
+        // линкуем env
         `ln -sf ${DEPLOY_PATH}/shared/backend/.env  ${DEPLOY_PATH}/current/backend/.env`,
         `ln -sf ${DEPLOY_PATH}/shared/frontend/.env ${DEPLOY_PATH}/current/frontend/.env`,
-
-        // backend deps (+ build)
-        `bash -lc '${NVM_INIT}; cd ${DEPLOY_PATH}/current/backend && npm ci && npm run build || true'`,
-
-        // frontend deps + build
-        `bash -lc '${NVM_INIT}; cd ${DEPLOY_PATH}/current/frontend && npm ci && npm run build'`,
-
-        // рестарт только бэка (pm2 после nvm init)
-        `bash -lc '${NVM_INIT}; pm2 startOrRestart ${DEPLOY_PATH}/current/ecosystem.config.js --only mesto-backend --env production'`,
+        // backend: deps + опц. build
+        `cd ${DEPLOY_PATH}/current/backend && npm ci`,
+        `cd ${DEPLOY_PATH}/current/backend && npm run build || true`,
+        // frontend: deps + build
+        `cd ${DEPLOY_PATH}/current/frontend && npm ci`,
+        `cd ${DEPLOY_PATH}/current/frontend && npm run build`,
+        // рестарт только бэка
+        `pm2 startOrRestart ${DEPLOY_PATH}/current/ecosystem.config.js --only mesto-backend --env production`,
       ].join(' && '),
     },
   },
