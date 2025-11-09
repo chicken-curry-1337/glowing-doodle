@@ -11,8 +11,8 @@ module.exports = {
     {
       name: 'mesto-backend',
       cwd: path.join(__dirname, 'backend'),
-      script: 'npm',
-      args: 'run start',
+      script: 'node',
+      args: 'dist/app.js', 
       env: { NODE_ENV: 'production' },
     },
   ],
